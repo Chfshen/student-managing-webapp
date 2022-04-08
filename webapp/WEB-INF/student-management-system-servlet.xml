@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:security="http://www.springframework.org/schema/security"
+	xsi:schemaLocation="
+		http://www.springframework.org/schema/beans
+		http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context
+		http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/mvc
+		http://www.springframework.org/schema/mvc/spring-mvc.xsd
+		http://www.springframework.org/schema/tx 
+		http://www.springframework.org/schema/tx/spring-tx.xsd
+		http://www.springframework.org/schema/security
+		http://www.springframework.org/schema/security/spring-security.xsd">
+
+	<!-- Add support for component scanning -->
+	<context:component-scan base-package="com.studentManagement" />
+
+	<!-- Add support for conversion, formatting and validation support -->
+	<mvc:annotation-driven/>
+	<mvc:resources location="/resources/" mapping="/resources/**" />
+
+	<!-- Define Spring MVC view resolver -->
+	<bean
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="prefix" value="/WEB-INF/view/" />
+		<property name="suffix" value=".jsp" />
+	</bean>
+
+    <!-- Define Database DataSource / connection pool -->
+	<bean id="myDataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource"
+          destroy-method="close">
+        <property name="driverClass" value="com.mysql.cj.jdbc.Driver" />
+        <property name="jdbcUrl" value="jdbc:mysql://localhost:3306/web_student_tracker?useSSL=false&amp;serverTimezone=UTC" />
+       
+	   <!-- username and password -->
+	    <property name="user" value="" />
+        <property name="password" value="" /> 
+       
+	    <property name="minPoolSize" value="5" />
+        <property name="maxPoolSize" value="20" />
+        <property name="maxIdleTime" value="30000" />
+	</bean>  
+	
+    <!-- Setup Hibernate session factory -->
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate5.LocalSessionFactoryBean">
+		<property name="dataSource" ref="myDataSource" />
+		<property name="packagesToScan" value="com.studentManagement.entity" />
+		<property name="hibernateProperties">
+		   <props>
+		      <prop key="hibernate.dialect">org.hibernate.dialect.MySQLDialect</prop>
+		      <prop key="hibernate.show_sql">true</prop>
+		   </props>
+		</property>
+   </bean>	  
+
+    <!-- Setup Hibernate transaction manager -->
+	<bean id="myTransactionManager"
+            class="org.springframework.orm.hibernate5.HibernateTransactionManager">
+        <property name="sessionFactory" ref="sessionFactory"/>
+    </bean>
+    
+    <!-- Enable configuration of transactional behavior based on annotations -->
+	<tx:annotation-driven transaction-manager="myTransactionManager" />
+	
+	<!-- Setup Spring Security rules -->
+	<security:http>
+		<security:intercept-url pattern="/student/addNewForm" access="hasRole('ADMIN')" />
+		<security:intercept-url pattern="/student/getUpdateForm**" access="hasRole('ADMIN')" />
+		<security:intercept-url pattern="/student/delete**" access="hasRole('ADMIN')" />
+		<security:intercept-url pattern="/**" access="hasRole('USER')" />
+		<security:form-login />
+		<security:logout />
+	</security:http>
+	
+	<!-- Define test users for Security -->
+	<security:authentication-manager>
+		<security:authentication-provider>
+				<security:user-service>
+				<security:user name="admin" password="admin" authorities="ROLE_USER, ROLE_ADMIN" />
+				<security:user name="user" password="user" authorities="ROLE_USER" />
+				</security:user-service>
+		</security:authentication-provider>
+	</security:authentication-manager>
+</beans>
+
+
+
+
+
